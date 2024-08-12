@@ -26,6 +26,8 @@ auto_summary:
   api_key: YOUR_API_KEY      # 密钥
   api_secret: YOUR_API_SECRET  # SECRET
   model: YOUR_MODEL_NAME # 模型
+  retries: 5 # 最大重试次数
+  delay: 3000 # 重试间隔（毫秒）
 ```
 
-星火AI_API申请地址 [星火API]('https://xinghuo.xfyun.cn/sparkapi')
+星火AI_API申请地址 [星火API](https://xinghuo.xfyun.cn/sparkapi)

@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { JSDOM } = require('jsdom'); // 用于解析 HTML
 
-async function sendChatRequest(model, key, secret, content) {
+async function sendChatRequest(model, key, secret, content, retries = 5, delay = 3000) {
     const url = "https://spark-api-open.xf-yun.com/v1/chat/completions";
     const data = {
         "model": model,
@@ -17,21 +17,28 @@ async function sendChatRequest(model, key, secret, content) {
         "Authorization": `Bearer ${key}:${secret}`
     };
 
-    try {
-        const response = await axios.post(url, data, { headers: headers });
-        const result = response.data;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const response = await axios.post(url, data, { headers: headers });
+            const result = response.data;
 
-        if (result && result.choices && result.choices.length > 0) {
-            return result.choices[0].message.content;
-        } else {
-            throw new Error('Failed to get summary from API.');
+            if (result && result.choices && result.choices.length > 0) {
+                return result.choices[0].message.content;
+            } else {
+                throw new Error('Failed to get summary from API.');
+            }
+        } catch (error) {
+            if (attempt < retries) {
+                console.warn(`Attempt ${attempt} failed. Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay)); // 延迟再重试
+            } else {
+                console.error('All attempts failed:', error);
+                throw error;
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-        throw error;
     }
 }
-
+hexo.log.info('Auto Summary Config:', hexo.config.auto_summary);
 hexo.extend.filter.register('after_render:html', async function (str, data) {
     if (data.page && data.page.layout === 'post') {
         const config = hexo.config.auto_summary || {};
@@ -40,7 +47,6 @@ hexo.extend.filter.register('after_render:html', async function (str, data) {
             return str;
         }
 
-        // 使用 JSDOM 解析 HTML
         const dom = new JSDOM(str);
         const document = dom.window.document;
         const articleContainer = document.querySelector(config.content_selector);
@@ -49,15 +55,14 @@ hexo.extend.filter.register('after_render:html', async function (str, data) {
             const content = articleContainer.textContent || articleContainer.innerHTML;
 
             try {
-                // 获取总结
+                // 获取摘要并处理重试
                 const summary = await sendChatRequest(config.model, config.api_key, config.api_secret, content);
                 const summaryHtml = `<div class="post-summary"><h3>文章总结:</h3><p>${summary}</p></div><hr/>`;
 
-                // 在文章容器的开头插入总结
+                // 在文章容器的开头插入摘要
                 articleContainer.insertAdjacentHTML('afterbegin', summaryHtml);
 
-                // 返回修改后的 HTML
-                return dom.serialize();
+                return dom.serialize(); // 返回修改后的 HTML
             } catch (error) {
                 hexo.log.error('Failed to generate summary:', error);
                 return str;
