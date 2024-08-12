@@ -1,6 +1,6 @@
 {
   "name": "hexo-auto-summary",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "keywords": [
     "hexo-plugin"
