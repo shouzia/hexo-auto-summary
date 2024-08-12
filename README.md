@@ -21,8 +21,11 @@
 ```yaml
 # Hexo 自动总结插件配置
 auto_summary:
+  enabled: true  # 启用插件
+  content_selector: '.post-content' # 文章内容ID 选择器
   api_key: YOUR_API_KEY      # 密钥
   api_secret: YOUR_API_SECRET  # SECRET
   model: YOUR_MODEL_NAME # 模型
 ```
 
+星火AI_API申请地址 [星火API]('https://xinghuo.xfyun.cn/sparkapi')

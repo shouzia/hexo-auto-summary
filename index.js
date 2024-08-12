@@ -35,20 +35,21 @@ async function sendChatRequest(model, key, secret, content) {
 hexo.extend.filter.register('after_render:html', async function (str, data) {
     if (data.page && data.page.layout === 'post') {
         const config = hexo.config.auto_summary || {};
-        if (!config.api_key || !config.api_secret || !config.model) {
-            hexo.log.warn('API Key, Secret, or Model is not configured for hexo-auto-summary.');
+        if (!config.enabled || !config.api_key || !config.api_secret || !config.model || !config.content_selector) {
+            hexo.log.warn('API Key, Secret, Model, or Content Selector is not configured for hexo-auto-summary.');
             return str;
         }
 
         // 使用 JSDOM 解析 HTML
         const dom = new JSDOM(str);
         const document = dom.window.document;
-        const articleContainer = document.querySelector('#article-container');
+        const articleContainer = document.querySelector(config.content_selector);
 
         if (articleContainer) {
             const content = articleContainer.textContent || articleContainer.innerHTML;
 
             try {
+                // 获取总结
                 const summary = await sendChatRequest(config.model, config.api_key, config.api_secret, content);
                 const summaryHtml = `<div class="post-summary"><h3>文章总结:</h3><p>${summary}</p></div><hr/>`;
 
@@ -62,7 +63,7 @@ hexo.extend.filter.register('after_render:html', async function (str, data) {
                 return str;
             }
         } else {
-            hexo.log.warn('#article-container not found in the post.');
+            hexo.log.warn(`Content container with selector "${config.content_selector}" not found in the post.`);
             return str;
         }
     }
